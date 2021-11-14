@@ -1,3 +1,6 @@
+#define _XOPEN_SOURCE 600
+#define _POSIX_C_SOURCE 200112L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -14,8 +17,7 @@ int matrix_size;
 double* matrix;
 BLOCK* blocks;
 
-sem_t main_wait;
-sem_t workers_wait;
+pthread_barrier_t barrier;
 
 double* makeMatrix() {
 
@@ -208,14 +210,6 @@ int main() {
 
     for(int j=0 ; j<1 ; j++) {
 
-        // set main thread semaphore to number of workers
-        sem_init(&main_wait, 0, 10);
-        sem_init(&workers_wait, 0, 1);
-
-        int value;
-        sem_getvalue(&main_wait, &value); 
-        printf("The value of the semaphors is %d\n", value);
-
         //system("clear");
         //printMatrixBlocks();
 
@@ -227,9 +221,6 @@ int main() {
         }
 
         updateMatrix();
-
-        sem_destroy(&main_wait);
-        sem_destroy(&workers_wait);
 
     }
 

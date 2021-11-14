@@ -228,6 +228,9 @@ int main() {
 
         updateMatrix();
 
+        sem_destroy(main_wait);
+        sem_destroy(workers_wait);
+
     }
 
     return 0;

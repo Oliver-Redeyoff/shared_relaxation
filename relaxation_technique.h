@@ -15,4 +15,3 @@ void printMatrixBlocks();
 void printBlocks();
 
 void* initWorkerThread(void* vargp);
-void workerThreadLoop(BLOCK* block);

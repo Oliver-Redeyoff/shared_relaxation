@@ -1,6 +1,34 @@
+/**
+* Parallel relaxation technique
+* Oliver Redeyoff
+*
+* Strategy:
+*
+* 1 - the main thread initialises 2 barriers with count set to the number n of 
+*     worker threads plus 1 for the main thread, and sets the value_change_flag 
+*     to 0. It then generates n worker threads which are each assigned distinct 
+*     ranges of the array that they are to operate on. Go to step 2.
+*
+* 2 - the main thread waits at barrier 1
+*   - the worker threads perform a relaxation on their assigned range of the 
+*     matrix and store the results in a temporary array, if a single value 
+*     differs to a given precision to the value they computed the previous 
+*     cycle, set the value_change_flag to 1, then wait at barrier 1
+*   - once the main thread and all worker threads are waiting at barrier 1, they 
+*     are all released and we go to step 3
+*
+* 3 - the worker threads wait at barrier 2
+*   - the main thread checks if value_change_flag is 0, if it is then end the program 
+*     and output the matrix, if not it resets value_change_flag to 0 and updates the 
+*     matrix with the new values which are stored in each temporary array
+*
+**/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/time.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
@@ -9,16 +37,16 @@
 // declare global variables to store matrix and blocks
 int thread_count;
 int decimal_precision;
-int decimal_precision_flag;
+int value_change_flag;
 int matrix_size;
 double* matrix;
 BLOCK* blocks;
 
-pthread_barrier_t barrier;
-sem_t sem;
+pthread_barrier_t barrier_1;
+pthread_barrier_t barrier_2;
 
+// Returns array of doubles of length matrix_size^2
 double* makeMatrix() {
-
     // allocate memory for new matrix of given size
     double* matrix = malloc(matrix_size*matrix_size*sizeof(double));
 
@@ -29,11 +57,7 @@ double* makeMatrix() {
             // populate with 1.0 if left or top edge, else with 0.0
             if (i==0 || j==0){
                 matrix[i*matrix_size + j] = 1.0;
-            } 
-            else if (i == matrix_size-1 || j == matrix_size-1) {
-                matrix[i*matrix_size + j] = 0.0;
-            }
-            else {
+            } else {
                 matrix[i*matrix_size + j] = 0.0;
             }
 
@@ -43,8 +67,11 @@ double* makeMatrix() {
     return matrix;
 }
 
+// Returns thread_count number of blocks which each contain a start_index, an
+// end_index and an array of doubles to store the new values that will be computed
+// between those indexes. No blocks overlap and they cover all the mutable cells of 
+// array
 BLOCK* makeBlocks() {
-
     BLOCK* blocks = malloc(thread_count*sizeof(BLOCK));
 
     int mutatable_indexes_count = matrix_size*matrix_size - matrix_size*2;
@@ -52,10 +79,6 @@ BLOCK* makeBlocks() {
     int equal_block_size = ceil((double)mutatable_indexes_count/(double)thread_count);
     int last_block_size = mutatable_indexes_count%equal_block_size;
     int equal_block_count = (mutatable_indexes_count-last_block_size) / equal_block_size;
-
-    // printf("equal block size: %d\n", equal_block_size);
-    // printf("last block size: %d\n", last_block_size);
-    // printf("equal block count: %d\n", equal_block_count);
 
     for(int i=0 ; i<equal_block_count ; i++) {
         BLOCK new_block;
@@ -80,24 +103,24 @@ BLOCK* makeBlocks() {
     }
 
     return blocks;
-
 }
 
+// Returns the average of the four cells surrounding a cell at a given index
 double getSuroundingAverage(int index) {
     double top_value = matrix[index - matrix_size];
     double right_value = matrix[index + 1];
     double bottom_value = matrix[index + matrix_size];
     double left_value = matrix[index - 1];
 
-    // printf("top value : %f\n", top_value);
-    // printf("right value : %f\n", right_value);
-    // printf("bottom value : %f\n", bottom_value);
-    // printf("left value : %f\n", left_value);
-    // printf("\n");
-
     return (top_value + right_value + bottom_value + left_value)/4;
 }
 
+// Returns a double converted to a double with a decimal precision defined by decimal_precision
+double withPrecision(double num) {
+    return floor(pow(10, decimal_precision)*num) / pow(10, decimal_precision);
+}
+
+// Performs relaxation for range indexes of matrix defined in the given block
 void processBlock(BLOCK* block) {
     int start_index = block->start_index;
     int end_index = block->end_index;
@@ -106,15 +129,15 @@ void processBlock(BLOCK* block) {
 
         // get index for block new values
         int b_i = m_i-start_index;
-        //printf("processing index %d\n", m_i);
 
         // keep any edge value as is
         if (m_i%matrix_size != 0 && (m_i+1)%matrix_size != 0) {
-            //printf("Processing index %d\n", m_i);
             double new_value = getSuroundingAverage(m_i);
-            block->new_values[b_i] = getSuroundingAverage(m_i);
+            if (withPrecision(new_value) != withPrecision(block->new_values[b_i])) {
+                value_change_flag = 1;
+            }
+            block->new_values[b_i] = new_value;
         } else {
-            //printf("Ignoring index %d\n", m_i);
             block->new_values[b_i] = matrix[m_i];
         }
 
@@ -122,8 +145,8 @@ void processBlock(BLOCK* block) {
 
 }
 
+// Updates matrix with values stored in each block's new_value array
 void updateMatrix() {
-    
     for (int i=0 ; i<thread_count ; i++) {
         int start_index = blocks[i].start_index;
         int end_index = blocks[i].end_index;
@@ -140,21 +163,21 @@ void updateMatrix() {
 
         }
     }
-
 }
 
+// Prints out matrix as table
 void printMatrix() {
     for (int i=0 ; i<matrix_size ; i++) {
         printf("\n");
         for (int j=0 ; j<matrix_size ; j++){
-            printf("%f, ", matrix[i*matrix_size + j]);
+            printf("%f, ", withPrecision(matrix[i*matrix_size + j]));
         }
     }
     printf("\n\n");
 }
 
+// Prints out matrix as table, and highlights each block
 void printMatrixBlocks() {
-
     char colors[6][20] = {"\033[0;31m", "\033[0;32m", "\033[0;33m", "\033[0;34m", "\033[0;35m", "\033[0;36m"};
 
     for (int i=0 ; i<matrix_size ; i++) {
@@ -167,13 +190,13 @@ void printMatrixBlocks() {
                     printf("%s", colors[q%5]);
                 }
             }
-            printf("%f\033[0m, ", matrix[i*matrix_size + j]);
+            printf("%f\033[0m, ", withPrecision(matrix[i*matrix_size + j]));
         }
     }
     printf("\n\n");
-
 }
 
+// Prints out data of each block
 void printBlocks() {
     printf("\n\n");
     for (int i=0 ; i<thread_count ; i++) {
@@ -184,72 +207,92 @@ void printBlocks() {
     }
 }
 
+// Entry point for worker thread
 void* initWorkerThread(void* vargp) {
     BLOCK* block = (BLOCK*)vargp;
 
-    workerThreadLoop(block);
+    // worker thread loop
+    while (1) {
+        // perform relaxation on given block
+        processBlock(block);
 
-    return NULL;
+        // wait to synchronise with main and other work threads at barrier 1
+        pthread_barrier_wait(&barrier_1);
+
+        // wait to synchronise with main and other work threads at barrier 2
+        pthread_barrier_wait(&barrier_2);
+    }
 }
 
-void workerThreadLoop(BLOCK* block) {
+int main(int argc, char **argv) {
 
-    // process block
-    usleep(50000);
-    processBlock(block);
+    // set global variables to passed values
+    if (argc != 4) {
+        printf("Too few arguments\n");
+        return 1;
+    }
+    matrix_size = atoi(argv[1]);
+    thread_count = atoi(argv[2]);
+    decimal_precision = atoi(argv[3]);
 
-    // when all threads reach this barrier, main will resume
-    // the worker threads will wait for the semaphore which will be
-    // unlocked when main has finished it's processing
-    //printf("Worker thread %d waiting at barrier\n", block->start_index);
-    pthread_barrier_wait(&barrier);
-    //printf("Worker thread %d waiting on semaphore\n", block->start_index);
-    sem_wait(&sem);
-    //printf("Worker thread %d released from semaphore\n", block->start_index);
-
-    workerThreadLoop(block);
-
-}
-
-int main() {
-
-    matrix_size = 13;
-    decimal_precision = 5;
-    thread_count = 5;
     pthread_t threads[thread_count];
 
-    // instantiate empty matrix using size
+    struct timeval start, end;
+  
+    // start timer
+    gettimeofday(&start, NULL);
+
+    // instantiate matrix
     matrix = makeMatrix();
+    // instantiate blocks
     blocks = makeBlocks();
 
-    // this flag will be set to 0 if any thread sees that a value differs from the last value they computed
-    decimal_precision_flag = 0;
+    // initialise barriers
+    pthread_barrier_init(&barrier_1, NULL, thread_count+1);
+    pthread_barrier_init(&barrier_2, NULL, thread_count+1);
 
-    // initialise semaphore and barrier
-    sem_init(&sem, 0, 0);
-    pthread_barrier_init(&barrier, NULL, thread_count+1);
+    value_change_flag = 0;
 
     // create threads
-    for(int i=0 ; i<thread_count ; i++) {
+    for (int i=0 ; i<thread_count ; i++) {
         pthread_create(&threads[i], NULL, initWorkerThread, (void*)&blocks[i]);
     }
 
-    for(int j=0 ; j<10000 ; j++) {
+    while (1) {
 
-        //printf("Main waiting at barrier\n");
-        pthread_barrier_wait(&barrier);
-        //printf("Main released from barrier\n");
+        // wait to synchronise with the worker threads at barrier 1
+        pthread_barrier_wait(&barrier_1);
 
-        updateMatrix();
-        system("clear");
-        printMatrixBlocks(); 
-
-        //printf("Main unlocking semaphore\n");
-        for(int i=0 ; i<thread_count ; i++) {
-            sem_post(&sem);
+        // check if no value has been changed, if so end program, if not
+        // reset the value_change_flag to 0
+        if (value_change_flag == 0) {
+            break;
+        } else {
+            value_change_flag = 0;
         }
 
+        // update matrix with the new values contained in the temporary arrays
+        updateMatrix();
+
+        // system("clear");
+        // printMatrixBlocks();
+        // usleep(100000);
+
+        // wait to synchronise with worker threads at barrier 2
+        pthread_barrier_wait(&barrier_2);
+
     }
+
+    // end timer
+    gettimeofday(&end, NULL);
+  
+    // calculate total time taken by the program
+    double time_taken;
+    time_taken = (end.tv_sec - start.tv_sec) * 1e6;
+    time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
+    system("clear");
+    printMatrixBlocks();
+    printf("Done in %f\n", time_taken);
 
     return 0;
 }

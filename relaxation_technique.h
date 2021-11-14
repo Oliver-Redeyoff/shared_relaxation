@@ -13,3 +13,6 @@ void processBlock(BLOCK* block);
 void printMatrix();
 void printMatrixBlocks();
 void printBlocks();
+
+void* initWorkerThread(void* vargp);
+void workerThreadLoop(BLOCK* block);

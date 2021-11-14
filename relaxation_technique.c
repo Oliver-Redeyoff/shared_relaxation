@@ -1,6 +1,3 @@
-#define _XOPEN_SOURCE 600
-#define _POSIX_C_SOURCE 200112L
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -18,6 +15,7 @@ double* matrix;
 BLOCK* blocks;
 
 pthread_barrier_t barrier;
+sem_t sem;
 
 double* makeMatrix() {
 
@@ -64,6 +62,9 @@ BLOCK* makeBlocks() {
         new_block.start_index = matrix_size + equal_block_size*i;
         new_block.end_index = matrix_size + equal_block_size*(i+1) - 1;
 
+        double* new_values = malloc((new_block.end_index-new_block.start_index)*sizeof(double));
+        new_block.new_values = new_values;
+
         blocks[i] = new_block;
     }
 
@@ -71,6 +72,9 @@ BLOCK* makeBlocks() {
         BLOCK new_block;
         new_block.start_index = matrix_size + mutatable_indexes_count - last_block_size;
         new_block.end_index = matrix_size*matrix_size - matrix_size-1;
+
+        double* new_values = malloc((new_block.end_index-new_block.start_index)*sizeof(double));
+        new_block.new_values = new_values;
 
         blocks[thread_count-1] = new_block;
     }
@@ -98,8 +102,6 @@ void processBlock(BLOCK* block) {
     int start_index = block->start_index;
     int end_index = block->end_index;
 
-    double* new_values = malloc((end_index-start_index)*sizeof(double));
-
     for(int m_i=start_index ; m_i<=end_index ; m_i++) {
 
         // get index for block new values
@@ -110,15 +112,13 @@ void processBlock(BLOCK* block) {
         if (m_i%matrix_size != 0 && (m_i+1)%matrix_size != 0) {
             //printf("Processing index %d\n", m_i);
             double new_value = getSuroundingAverage(m_i);
-            new_values[b_i] = getSuroundingAverage(m_i);
+            block->new_values[b_i] = getSuroundingAverage(m_i);
         } else {
             //printf("Ignoring index %d\n", m_i);
-            new_values[b_i] = matrix[m_i];
+            block->new_values[b_i] = matrix[m_i];
         }
 
     }
-
-    block->new_values = new_values;
 
 }
 
@@ -184,21 +184,38 @@ void printBlocks() {
     }
 }
 
-void *blockProcessorThread(void *vargp)
-{
+void* initWorkerThread(void* vargp) {
     BLOCK* block = (BLOCK*)vargp;
-    usleep(1000);
-    processBlock(block);
-    usleep(1000);
+
+    workerThreadLoop(block);
+
     return NULL;
 }
 
-int main() {
-    system("clear");
+void workerThreadLoop(BLOCK* block) {
 
-    matrix_size = 10;
-    decimal_precision = 4;
-    thread_count = 3;
+    // process block
+    usleep(50000);
+    processBlock(block);
+
+    // when all threads reach this barrier, main will resume
+    // the worker threads will wait for the semaphore which will be
+    // unlocked when main has finished it's processing
+    //printf("Worker thread %d waiting at barrier\n", block->start_index);
+    pthread_barrier_wait(&barrier);
+    //printf("Worker thread %d waiting on semaphore\n", block->start_index);
+    sem_wait(&sem);
+    //printf("Worker thread %d released from semaphore\n", block->start_index);
+
+    workerThreadLoop(block);
+
+}
+
+int main() {
+
+    matrix_size = 13;
+    decimal_precision = 5;
+    thread_count = 5;
     pthread_t threads[thread_count];
 
     // instantiate empty matrix using size
@@ -208,19 +225,29 @@ int main() {
     // this flag will be set to 0 if any thread sees that a value differs from the last value they computed
     decimal_precision_flag = 0;
 
-    for(int j=0 ; j<1 ; j++) {
+    // initialise semaphore and barrier
+    sem_init(&sem, 0, 0);
+    pthread_barrier_init(&barrier, NULL, thread_count+1);
 
-        //system("clear");
-        //printMatrixBlocks();
+    // create threads
+    for(int i=0 ; i<thread_count ; i++) {
+        pthread_create(&threads[i], NULL, initWorkerThread, (void*)&blocks[i]);
+    }
 
-        for(int i=0 ; i<thread_count ; i++) {
-            pthread_create(&threads[i], NULL, blockProcessorThread, (void *)&blocks[i]);
-        }
-        for(int i=0 ; i<thread_count ; i++) {
-            pthread_join(threads[i], NULL);
-        }
+    for(int j=0 ; j<10000 ; j++) {
+
+        //printf("Main waiting at barrier\n");
+        pthread_barrier_wait(&barrier);
+        //printf("Main released from barrier\n");
 
         updateMatrix();
+        system("clear");
+        printMatrixBlocks(); 
+
+        //printf("Main unlocking semaphore\n");
+        for(int i=0 ; i<thread_count ; i++) {
+            sem_post(&sem);
+        }
 
     }
 

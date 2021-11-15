@@ -2,6 +2,9 @@
 #SBATCH --account=cm30225
 #SBATCH --partition=teaching
 #SBATCH --job-name=Relaxation
-#SBATCH --nodes=1
+#SBATCH --nodes=4
+#SBATCH --time=00:10:00
+#SBATCH --mail-user=oliver.redeyoff@gmail.com
+#SBATCH --mail-type=END
 
 sh test.sh

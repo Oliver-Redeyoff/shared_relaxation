@@ -290,9 +290,10 @@ int main(int argc, char **argv) {
     double time_taken;
     time_taken = (end.tv_sec - start.tv_sec) * 1e6;
     time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
-    system("clear");
-    printMatrixBlocks();
-    printf("Done in %f\n", time_taken);
+    
+    //system("clear");
+    //printMatrixBlocks();
+    printf("%d, %d, %d, %f\n", matrix_size, thread_count, decimal_precision, time_taken);
 
     return 0;
 }

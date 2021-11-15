@@ -1,0 +1,7 @@
+#!/bin/sh
+#SBATCH --account=cm30225
+#SBATCH --partition=teaching
+#SBATCH --job-name=Relaxation
+#SBATCH --nodes=1
+
+sh test.sh

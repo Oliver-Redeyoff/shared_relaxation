@@ -37,6 +37,7 @@
 // declare global variables to store matrix and blocks
 int thread_count;
 int decimal_precision;
+double decimal_value;
 int value_change_flag;
 int matrix_size;
 double* matrix;
@@ -115,11 +116,6 @@ double getSuroundingAverage(int index) {
     return (top_value + right_value + bottom_value + left_value)/4;
 }
 
-// Returns a double converted to a double with a decimal precision defined by decimal_precision
-double withPrecision(double num) {
-    return floor(pow(10, decimal_precision)*num) / pow(10, decimal_precision);
-}
-
 // Performs relaxation for range indexes of matrix defined in the given block
 void processBlock(BLOCK* block) {
     int start_index = block->start_index;
@@ -133,7 +129,8 @@ void processBlock(BLOCK* block) {
         // keep any edge value as is
         if (m_i%matrix_size != 0 && (m_i+1)%matrix_size != 0) {
             double new_value = getSuroundingAverage(m_i);
-            if (withPrecision(new_value) != withPrecision(block->new_values[b_i])) {
+            double diff = new_value - block->new_values[b_i];
+            if (diff > decimal_value) {
                 value_change_flag = 1;
             }
             block->new_values[b_i] = new_value;
@@ -165,17 +162,6 @@ void updateMatrix() {
     }
 }
 
-// Prints out matrix as table
-void printMatrix() {
-    for (int i=0 ; i<matrix_size ; i++) {
-        printf("\n");
-        for (int j=0 ; j<matrix_size ; j++){
-            printf("%f, ", withPrecision(matrix[i*matrix_size + j]));
-        }
-    }
-    printf("\n\n");
-}
-
 // Prints out matrix as table, and highlights each block
 void printMatrixBlocks() {
     char colors[6][20] = {"\033[0;31m", "\033[0;32m", "\033[0;33m", "\033[0;34m", "\033[0;35m", "\033[0;36m"};
@@ -190,7 +176,7 @@ void printMatrixBlocks() {
                     printf("%s", colors[q%5]);
                 }
             }
-            printf("%f\033[0m, ", withPrecision(matrix[i*matrix_size + j]));
+            printf("%f\033[0m, ", matrix[i*matrix_size + j]);
         }
     }
     printf("\n\n");
@@ -240,6 +226,7 @@ int main(int argc, char **argv) {
     matrix_size = atoi(argv[1]);
     thread_count = atoi(argv[2]);
     decimal_precision = atoi(argv[3]);
+    decimal_value = pow(0.1, decimal_precision);
 
     pthread_t threads[thread_count];
 
@@ -294,8 +281,8 @@ int main(int argc, char **argv) {
         // usleep(100000);
 
         // wait to synchronise with worker threads at barrier 2
-        pthread_barrier_wait(&barrier_2);
         gettimeofday(&sequential_end, NULL);
+        pthread_barrier_wait(&barrier_2);
         sequential_time_taken += getTimeTaken(sequential_start, sequential_end);
 
     }

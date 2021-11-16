@@ -6,7 +6,7 @@
     google.charts.setOnLoadCallback(drawChart);
 
     function drawChart() {
-        var data1_og = [
+        var scalability_og = [
             ['Size', '4',           '8',          '12',       '16',       '20',       '24',       '28',       '32',       '36',       '40',       '44'],
             ['50',    0.711920,     0.559448,     0.533652,   0.551927,   0.556803,   0.559497,   0.673192,   0.639539,   0.714258,   0.757884,   0.811590],
             ['60',    1.367630,     1.026227,     0.933830,   0.932847,   0.935898,   0.944258,   1.011535,   1.142479,   1.161578,   1.189219,   1.256478],
@@ -26,8 +26,32 @@
             ['200',   113.689685,   66.742716,    51.825247,  44.648550,  41.210855,  37.949750,  37.121536,  35.799510,  36.007326,  35.120129,  41.516118],
         ];
 
+        var sequential_time_150 = 125.290252;
+        var parallel_times_150 = [
+            ['Thread count',    'Speedup in terms of thread count'],
+            ['4',               37.882076],
+            ['8',               23.221920],
+            ['12',              18.587234],
+            ['16',              16.554722],
+            ['20',              15.450125],
+            ['24',              14.835379],
+            ['28',              14.641105],
+            ['32',              14.234571],
+            ['36',              14.462749],
+            ['40',              15.038297],
+            ['44',              16.352203]
+        ];
 
-        var data1 = data1_og;
+        var speedup_150 = parallel_times_150;
+        for (var i=0 ; i<speedup_150.length ; i++) {
+            if (i!=0){
+                speedup_150[i][1] = sequential_time_150/speedup_150[i][1];
+            }
+        }
+
+        console.log(speedup_150);
+
+        var scalability = scalability_og;
         //var data1 = removeCol(data1, "4");
         //var data1 = removeCol(data1, "8");
         //var data1 = removeCol(data1, "12");
@@ -41,16 +65,16 @@
         //var data1 = removeCol(data1, "44");
 
 
-        var data = google.visualization.arrayToDataTable(data1);
+        var data = google.visualization.arrayToDataTable(speedup_150);
 
         var options = {
             curveType: 'function',
             legend: { position: 'bottom' },
             vAxis: {
-                title: 'Execution time (seconds)'
+                title: 'Speedup Sp'
             },
             hAxis: {
-                title: 'Size of matrix'
+                title: 'Number of threads p'
             },
             series: {
                 0: { color: '#e6194B' },
@@ -93,6 +117,6 @@
     </script>
   </head>
   <body>
-    <div id="curve_chart" style="width: 1800px; height: 2000px"></div>
+    <div id="curve_chart" style="width: 1500px; height: 1000px"></div>
   </body>
 </html>

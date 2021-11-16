@@ -309,7 +309,7 @@ int main(int argc, char **argv) {
     //system("clear");
     //printMatrixBlocks();
     //printf("%d, %d, %d, %f\n", matrix_size, thread_count, decimal_precision, time_taken);
-    printf("%f, %f, %f", time_taken, sequential_time_taken, parallel_time_taken);
+    printf("%d, %f, %f, %f\n", thread_count, time_taken, sequential_time_taken, parallel_time_taken);
 
     return 0;
 }

@@ -197,13 +197,13 @@ double getTimeTaken(struct timeval start_time, struct timeval end_time) {
 int main(int argc, char **argv) {
 
     // set global variables to passed values
-    if (argc != 4) {
+    if (argc != 3) {
         printf("Too few arguments\n");
         return 1;
     }
     matrix_size = atoi(argv[1]);
-    thread_count = atoi(argv[2]);
-    decimal_precision = atoi(argv[3]);
+    thread_count = 1;
+    decimal_precision = atoi(argv[2]);
     decimal_value = pow(0.1, decimal_precision);
 
     struct timeval start, end;
@@ -255,9 +255,7 @@ int main(int argc, char **argv) {
     // calculate total time taken by the program
     time_taken = getTimeTaken(start, end);
     
-    //system("clear");
-    //printMatrixBlocks();
-    //printf("%d, %d, %d, %f\n", matrix_size, thread_count, decimal_precision, time_taken);
+    // print results
     printf("%d, %f, %f, %f\n", matrix_size, time_taken, sequential_time_taken, parallel_time_taken);
 
     return 0;

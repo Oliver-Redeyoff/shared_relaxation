@@ -7,4 +7,4 @@
 #SBATCH --mail-user=oliver.redeyoff@gmail.com
 #SBATCH --mail-type=END
 
-sh test.sh
+sh test_speedup.sh

@@ -293,9 +293,7 @@ int main(int argc, char **argv) {
     // calculate total time taken by the program
     time_taken = getTimeTaken(start, end);
     
-    //system("clear");
-    //printMatrixBlocks();
-    //printf("%d, %d, %d, %f\n", matrix_size, thread_count, decimal_precision, time_taken);
+    // print results
     printf("%d, %f, %f, %f\n", thread_count, time_taken, sequential_time_taken, parallel_time_taken);
 
     return 0;

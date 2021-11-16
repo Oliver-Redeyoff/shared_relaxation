@@ -1,6 +1,6 @@
 make
 
-for i in {1..11}
+for i in {5..15}
 do
-   ./relaxation 150 $((4*$i)) 3
+   ./relaxation $(($i*10)) 2 3
 done

@@ -221,6 +221,12 @@ void* initWorkerThread(void* vargp) {
     return NULL;
 }
 
+double getTimeTaken(struct timeval start_time, struct timeval end_time) {
+    double res = (end_time.tv_sec - start_time.tv_sec) * 1e6;
+    res = (res + (end_time.tv_usec - start_time.tv_usec)) * 1e-6;
+    return res;
+}
+
 int main(int argc, char **argv) {
 
     // set global variables to passed values
@@ -233,6 +239,11 @@ int main(int argc, char **argv) {
     decimal_precision = atoi(argv[3]);
 
     struct timeval start, end;
+    double time_taken;
+    struct timeval parallel_start, parallel_end;
+    double parallel_time_taken;
+    struct timeval sequential_start, sequential_end;
+    double sequential_time_taken;
   
     // start timer
     gettimeofday(&start, NULL);
@@ -246,9 +257,14 @@ int main(int argc, char **argv) {
 
     while (1) {
 
+        gettimeofday(&parallel_start, NULL);
         for (int i=0 ; i<thread_count ; i++) {
             processBlock(&blocks[i]);
         }
+        gettimeofday(&parallel_end, NULL);
+        parallel_time_taken += getTimeTaken(parallel_start, parallel_end);
+
+        gettimeofday(&sequential_start, NULL);
 
         // check if no value has been changed, if so end program, if not
         // reset the value_change_flag to 0
@@ -261,23 +277,20 @@ int main(int argc, char **argv) {
         // update matrix with the new values contained in the temporary arrays
         updateMatrix();
 
-        // system("clear");
-        // printMatrixBlocks();
-        // usleep(100000);
-
+        gettimeofday(&sequential_end, NULL);
+        sequential_time_taken += getTimeTaken(sequential_start, sequential_end);
     }
 
     // end timer
     gettimeofday(&end, NULL);
   
     // calculate total time taken by the program
-    double time_taken;
-    time_taken = (end.tv_sec - start.tv_sec) * 1e6;
-    time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
+    time_taken = getTimeTaken(start, end);
     
     //system("clear");
     //printMatrixBlocks();
-    printf("%d, %d, %d, %f\n", matrix_size, thread_count, decimal_precision, time_taken);
+    //printf("%d, %d, %d, %f\n", matrix_size, thread_count, decimal_precision, time_taken);
+    printf("%d, %f, %f, %f\n", matrix_size, time_taken, sequential_time_taken, parallel_time_taken);
 
     return 0;
 }

@@ -26,55 +26,56 @@
             ['200',   113.689685,   66.742716,    51.825247,  44.648550,  41.210855,  37.949750,  37.121536,  35.799510,  36.007326,  35.120129,  41.516118],
         ];
 
-        var sequential_time_150 = 125.290252;
-        var parallel_times_150 = [
-            ['Thread count',    'Speedup in terms of thread count'],
-            ['4',               14.785296],
-            ['8',               11.945224],
-            ['12',              10.970175],
-            ['16',              10.545062],
-            ['20',              9.980404],
-            ['24',              9.954318],
-            ['28',              14.641105],
-            ['32',              14.234571],
-            ['36',              14.462749],
-            ['40',              15.038297],
-            ['44',              16.352203]
+        // Speedup
+        var sequential_time_4096 = 95.358901;
+        var parallel_times_4096 = [
+            ['Thread count',    'Speedup in terms of thread count', 'Amdhal limit on speedup'],
+            ['4',               51.886392,                          1.926848],
+            ['8',               46.801152,                          2.278876],
+            ['12',              40.184584,                          2.426657],
+            ['16',              39.204048,                          2.507976],
+            ['20',              38.122267,                          2.559437],
+            ['24',              37.707810,                          2.594934],
+            ['28',              37.465551,                          2.620897],
+            ['32',              37.311066,                          2.640714],
+            ['36',              37.509960,                          2.656335],
+            ['40',              37.577570,                          2.668965],
+            ['44',              37.720014,                          2.679389]
         ];
-
-        var speedup_150 = parallel_times_150;
-        for (var i=0 ; i<speedup_150.length ; i++) {
+        var speedup_4096 = parallel_times_4096;
+        for (var i=0 ; i<speedup_4096.length ; i++) {
             if (i!=0){
-                speedup_150[i][1] = sequential_time_150/speedup_150[i][1];
+                speedup_4096[i][1] = sequential_time_4096/speedup_4096[i][1];
             }
         }
 
-        console.log(speedup_150);
+        // Efficiency
+        var efficiency = [
+            ['Thread count',    'Efficiency of '],
+            ['4',               51.886392/95.358901/4],
+            ['8',               46.801152/95.358901/8],
+            ['12',              40.184584/95.358901/12],
+            ['16',              39.204048/95.358901/16],
+            ['20',              38.122267/95.358901/20],
+            ['24',              37.707810/95.358901/24],
+            ['28',              37.465551/95.358901/28],
+            ['32',              37.311066/95.358901/32],
+            ['36',              37.509960/95.358901/36],
+            ['40',              37.577570/95.358901/40],
+            ['44',              37.720014/95.358901/44]
+        ];
 
-        var scalability = scalability_og;
-        //var data1 = removeCol(data1, "4");
-        //var data1 = removeCol(data1, "8");
-        //var data1 = removeCol(data1, "12");
-        //var data1 = removeCol(data1, "16");
-        //var data1 = removeCol(data1, "20");
-        //var data1 = removeCol(data1, "24");
-        //var data1 = removeCol(data1, "28");
-        //var data1 = removeCol(data1, "32");
-        //var data1 = removeCol(data1, "36");
-        //var data1 = removeCol(data1, "40");
-        //var data1 = removeCol(data1, "44");
 
-
-        var data = google.visualization.arrayToDataTable(speedup_150);
+        var data = google.visualization.arrayToDataTable(efficiency);
 
         var options = {
             curveType: 'function',
             legend: { position: 'bottom' },
             vAxis: {
-                title: 'Speedup Sp'
+                title: 'Efficiency'
             },
             hAxis: {
-                title: 'Number of threads p'
+                title: 'Number of processors p'
             },
             series: {
                 0: { color: '#e6194B' },

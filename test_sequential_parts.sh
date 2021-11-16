@@ -1,6 +1,6 @@
 make s
 
-for i in {9..12}
+for i in {1..12}
 do
-   ./relaxation $((2**$i)) 3
+   ./relaxation $((1000*$i)) 3
 done

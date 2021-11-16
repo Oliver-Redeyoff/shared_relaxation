@@ -67,17 +67,32 @@
             ['44',              2.582025/6.937460/44,  9.766077/27.809685/44,  37.720014/95.358901/44]
         ];
 
+        var gustafson = [
+            ['Matrix size', 'Gustafson limit on speedup'],
+            ['1000',        1/(0.81 + (1-0.81)/44)],
+            ['2000',        1/(0.85 + (1-0.85)/44)],
+            ['3000',        1/(0.87 + (1-0.87)/44)],
+            ['4000',        1/(0.89 + (1-0.89)/44)],
+            ['5000',        1/(0.90 + (1-0.90)/44)],
+            ['6000',        1/(0.91 + (1-0.91)/44)],
+            ['7000',        1/(0.92 + (1-0.91)/44)],
+            ['8000',        1/(0.92 + (1-0.91)/44)],
+            ['9000',        1/(0.92 + (1-0.91)/44)],
+            ['10000',       1/(0.93 + (1-0.91)/44)],
+            ['11000',       1/(0.93 + (1-0.91)/44)]
+        ];
 
-        var data = google.visualization.arrayToDataTable(efficiency);
+
+        var data = google.visualization.arrayToDataTable(gustafson);
 
         var options = {
             curveType: 'function',
             legend: { position: 'bottom' },
             vAxis: {
-                title: 'Efficiency'
+                title: 'Sp(n)'
             },
             hAxis: {
-                title: 'Number of processors p'
+                title: 'Size of matrix n'
             },
             series: {
                 0: { color: '#e6194B' },

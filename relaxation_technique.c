@@ -294,7 +294,7 @@ int main(int argc, char **argv) {
     time_taken = getTimeTaken(start, end);
     
     // print results
-    printf("%d, %f, %f, %f\n", thread_count, time_taken, sequential_time_taken, parallel_time_taken);
+    printf("%d, %f, %f, %f\n", matrix_size, time_taken, sequential_time_taken, parallel_time_taken);
 
     return 0;
 }

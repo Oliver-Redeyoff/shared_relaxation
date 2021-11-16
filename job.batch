@@ -4,7 +4,5 @@
 #SBATCH --job-name=Relaxation
 #SBATCH --nodes=1
 #SBATCH --time=00:10:00
-#SBATCH --mail-user=oliver.redeyoff@gmail.com
-#SBATCH --mail-type=END
 
-sh test_sequential_parts.sh
+sh test_speedup.sh

@@ -1,9 +1,8 @@
 /**
 * Parallel relaxation technique
-* Oliver Redeyoff
 *
 * HOW TO COMPILE :
-* gcc subsission_relaxation_technique.c -lm -lpthread
+* gcc submission_relaxation_technique.c -lm -lpthread
 *
 * HOW TO RUN :
 * ./a.out <matrix size> <number of threads> <precision decimal number>

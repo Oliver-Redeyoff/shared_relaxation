@@ -5,4 +5,4 @@
 #SBATCH --nodes=1
 #SBATCH --time=00:10:00
 
-sh test_speedup.sh
+sh test_gustafson.sh

@@ -32,7 +32,6 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
-#include "relaxation_technique.h"
 
 // declare global variables to store matrix and blocks
 int thread_count;
@@ -45,6 +44,12 @@ BLOCK* blocks;
 
 pthread_barrier_t barrier_1;
 pthread_barrier_t barrier_2;
+
+typedef struct block {
+    int start_index;
+    int end_index;
+    double* new_values;
+} BLOCK;
 
 // Returns array of doubles of length matrix_size^2
 double* makeMatrix() {

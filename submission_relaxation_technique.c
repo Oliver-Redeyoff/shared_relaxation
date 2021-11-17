@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <pthread.h>
-#include <semaphore.h>
 
 typedef struct block {
     int start_index;
